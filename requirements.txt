@@ -1,0 +1,10 @@
+fastapi
+httpx
+uvicorn[standard]
+asyncio
+uuid
+python-dotenv
+starlette
+redis
+celery
+yt-dlp

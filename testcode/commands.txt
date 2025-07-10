@@ -1,0 +1,17 @@
+# Commands I use to quickly startup the services
+
+# run a next.js development server
+npm run dev
+
+# run multiple workers for parrallelism
+uvicorn backendcode.API:app --host 0.0.0.0 --port 8000 --reload
+
+# run multiple workers for parrallelism
+celery -A backendcode.celery_config.celery_app worker --loglevel=info --pool=solo --hostname=worker1@%h
+celery -A backendcode.celery_config.celery_app worker --loglevel=info --pool=solo --hostname=worker2@%h
+
+# start a redis container
+docker start 91
+
+# open redis contaienr to investigate its content
+docker exec -it 91 redis-cli

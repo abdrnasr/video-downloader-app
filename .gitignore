@@ -1,0 +1,16 @@
+# Ignore Python cache and virtual environment
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+video_downloader_python/
+
+# Ignore log files
+*.log
+
+# Ignore other files
+thumbnails/
+Extra/
+videos/
+node_modules/
