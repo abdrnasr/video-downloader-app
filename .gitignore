@@ -14,10 +14,10 @@ thumbnails/
 Extra/
 videos/
 
-# Next.js ignore
+# Next.js recommended .gitignore
 # dependencies
-/node_modules
-/.pnp
+next-app/node_modules
+next-app/.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -26,14 +26,14 @@ videos/
 !.yarn/versions
 
 # testing
-/coverage
+next-app/coverage
 
 # next.js
-/.next/
-/out/
+next-app/.next/
+next-app/out/
 
 # production
-/build
+next-app/build
 
 # misc
 .DS_Store
@@ -46,7 +46,7 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
+/.env*
 
 # vercel
 .vercel

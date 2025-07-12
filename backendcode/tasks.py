@@ -6,6 +6,7 @@ import time
 import shutil
 
 from backendcode.data_models import EnvironmentVariablesConfig
+
 config = EnvironmentVariablesConfig()
 
 def get_redis_client():
@@ -36,9 +37,9 @@ def download_video(self,task_id, url, video_format):
             redis_client.set(task_id+":speed",d['_speed_str'])
             redis_client.set(task_id+":progress",d['_percent_str'])
             redis_client.set(task_id+":status","downloading")
-        elif d['status'] == 'finished':
-            redis_client.set(task_id+":status","finished")
+        if d['status'] == 'finished':
             time.sleep(2)
+            redis_client.set(task_id + ":status", "finished")
 
     # Ensure the video directory exists and create a folder for the task_id
     output_directory = config.fullpath_videos
@@ -46,7 +47,7 @@ def download_video(self,task_id, url, video_format):
     os.makedirs(task_directory, exist_ok=True)
 
     # Define the path to store the video at along with its name
-    video_Path = os.path.join(task_directory, '%(title)s.%(ext)s')
+    video_Path = os.path.join(task_directory, 'video.%(ext)s')
 
     # Define the download options for yt-dlp
     ydl_opts = {
@@ -54,9 +55,9 @@ def download_video(self,task_id, url, video_format):
         'progress_hooks': [progress_hook],  # Hook for live updates
         'outtmpl': video_Path,
         "keepvideo": False,
-        "merge_output_format": "mp4"
+        "merge_output_format": "mp4",
     }
-    
+
     # start the download procedure
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])

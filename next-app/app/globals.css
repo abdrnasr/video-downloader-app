@@ -1,0 +1,28 @@
+@import "tailwindcss";
+@plugin "daisyui";
+@theme {
+  --color-shadowcast: black; /* default */
+}
+
+@plugin "daisyui/theme" {
+  name: "light";
+
+  --color-primary: var(--color-blue-600);
+
+}
+
+
+@plugin "daisyui/theme" {
+  name: "dark";
+  prefersdark: true; /* set as default dark mode (prefers-color-scheme:dark) */
+  --color-primary: var(--color-blue-600);
+
+  --color-base-100: #121421 ;
+  --color-base-200: #151727;
+  --color-base-300: #1d1f32;
+  --color-shadowcast: black; 
+}
+
+:root{
+  --colors: #373e7c ;
+}

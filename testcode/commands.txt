@@ -3,8 +3,11 @@
 # run a next.js development server
 npm run dev
 
-# run multiple workers for parrallelism
-uvicorn backendcode.API:app --host 192.168.33.6 --port 8000 --reload
+# Activate venv
+video_downloader_python\Scripts\activate
+
+# run FastAPI server
+uvicorn backendcode.API:app --host 0.0.0.0 --port 8000 --reload
 
 # run multiple workers for parrallelism
 celery -A backendcode.celery_config.celery_app worker --loglevel=info --pool=solo --hostname=worker1@%h
