@@ -1,18 +1,17 @@
 # Online Video Downloader
 ## About
-This web app allows you to download videos from the internet. It is based on the **yt-dlp** project. The frontend is built using Next.js, and the backend utilizes Python (FastAPI), Celery, and Redis.
+This web app allows you to download videos from the internet. It is based on the **yt-dlp** project. The frontend is built using **Next.js**, and the backend utilizes  **Python (FastAPI), Celery, and Redis**.
 
 ### Computer Screen
 ![Alt text](repo_assets/Dark_Mode_PC.png)
 ### Mobile Screen
-![Alt text](repo_assets/Dark_Mode_Phone.jpeg)
 <p align="center">
     <img src="repo_assets/Dark_Mode_Phone.jpeg" alt="Phone View Image" width="300"/>
 </p>
 
 # Features
 - The frontend is fully responsive, making it easy to download videos from both desktop and mobile devices.
-- It's a web-based interface — not a command-line tool — which makes it much more user-friendly.
+- It's a web-based interface - not a command-line tool - which makes it much more user-friendly.
 - The app can be hosted and accessed by multiple users.
 - It supports downloading multiple videos at the same time, provided Celery is configured to run multiple workers.
 - There are no restrictions on the number or size of videos you can download.
@@ -20,7 +19,7 @@ This web app allows you to download videos from the internet. It is based on the
 
 
 ## Working Websites:
-This web app only works with Youtube.
+This web app only works with **Youtube**.
 
 ## Requirements
 - Backend
@@ -48,7 +47,7 @@ NEXT_PUBLIC_SITE_HOSTNAME=http://127.0.0.1:3000
 ```
 - These variables are checked inside the ***next.config.ts*** file, so you will see a warning if they are not set or are incorrect.
 
-- One simple way to pass the environment variables is by using an ***.env*** file. You can create a ***.env*** file in the local-video-downloader folder and update the values accordingly. (This file should already exist after cloning the repository, as it is included by default, i.e., you should find this file under ***.local-video-downloader/.env***). Next.js will automatically load the .env file and all of the variables in it on startup.
+- One simple way to pass the environment variables is by using an ***.env*** file. You can create a ***.env*** file in the **local-video-downloader** folder and update the values accordingly. (This file should already exist after cloning the repository, as it is included by default, i.e., you should find this file under ***.local-video-downloader/.env***). Next.js will automatically load the .env file and all of the variables in it on startup.
 
 ### Running the frontend:
 1. Clone the project and navigate to the local-video-downloader folder, which contains the code for the Next.js app.
@@ -80,6 +79,7 @@ VIDEO_PATH=videos
 THUMBNAIL_PERSISTANCE_DURATION=300
 VIDEO_PERSISTANCE_DURATION=3600
 ```
+- Here again, the environment variables can be simply passed using the **.env** file.
 ### Running the backend:
 1. Now to run the backend, ensure you have Redis up and running (Docker or local installation). You must know at which address it is located since you must set the environment variables accordingly.
 2. Clone the project and navigate to its root directory.
@@ -103,12 +103,12 @@ pip install -r requirements.txt
 ```
 (video_downloader_python) {path}>
 ```
-This signifies that you are currently using the ***"video_downloader_python"*** environment.
+This signifies that you are currently using the ***"video_downloader_python"*** environment, and **{path}** is the path to the root of the cloned project.
 
 6. Next, open up a terminal and navigate to the root directory of the project. You will now run the FastAPI backend using the following command:
 ```
 // Ensure you change the host/port to reflect your network structure.  
-uvicorn backendcode.API:app --host 0.0.0.0 --port 8000 --reload
+uvicorn backendcode.API:app --host 0.0.0.0 --port 8000
 ```
 
 7. Then, open up another terminal, and navigate to the root. You will run a Celery worker with the following command:
@@ -132,7 +132,7 @@ celery -A backendcode.celery_config.celery_app worker --pool=solo --hostname=wor
 This project uses a modern asynchronous backend architecture powered by FastAPI, Celery, and Redis. Below are the core reasons behind these architectural choices:
 
 ### 1. Python’s GIL Limits True Multithreading
-Python (specifically CPython) is limited by the Global Interpreter Lock (GIL), which prevents true parallel execution of CPU-bound tasks in a single interpreter session. Since video downloading and processing are often blocking operations, using Python's built-in threading module would not provide actual performance gains. Instead, the system delegates these heavy tasks to Celery workers, which are separate processes, achieving true parallelism and efficient resource use.
+Python (specifically CPython) is limited by the Global Interpreter Lock (GIL), which prevents true parallel execution of CPU-bound tasks in a single interpreter session. Since video downloading and processing are often blocking operations, using Python's built-in threading module would not provide actual performance gains, and the backend will hang on each request. Instead, the system delegates these heavy tasks to Celery workers, which are separate processes, achieving true parallelism and efficient resource use.
 
 ### 2. Redis + Celery Simplify Task Handling
 Manual thread management in Python can become complex and error-prone — especially when dealing with retries, timeouts, task queues, or scaling. Celery abstracts these concerns elegantly:
