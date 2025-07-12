@@ -27,7 +27,8 @@ function isValidHttpUrl(string: string) : boolean {
   let url;
   try {
     url = new URL(string);
-  } catch(_) {
+  } catch(err) {
+    console.log(err)
     return false;  
   }
   return url.protocol === "http:" || url.protocol === "https:";
@@ -76,7 +77,6 @@ export default function VideoDownloaderComp({id ,onRemove }: ListItemProps) {
 
       const [videoURL, setURL] = useState("");
       const [taskID,setTaskID] = useState("");
-      const [retryFormatFetch,setRetryFormatFetch] = useState(false);
       const lastRequestedVideoURL = useRef("");
 
       const [loading, setLoading] = useState<boolean>(false);
@@ -114,8 +114,11 @@ export default function VideoDownloaderComp({id ,onRemove }: ListItemProps) {
           setTaskID(result.task_id);
           fetchVideoData(result.task_id)
 
-        } catch (err: any) {
-          setError(err.message);
+        } catch (err:  unknown) {
+          if(err instanceof Error){
+            setError(err.message);
+          }
+          
           setLoading(false);
         } 
       };
@@ -177,15 +180,17 @@ export default function VideoDownloaderComp({id ,onRemove }: ListItemProps) {
             }
             const jsonData: ThumbnailURLResponse = await response.json();
             setThumbnailURL(jsonData);
-          } catch (error) {
-            console.error('Error fetching data:', error);
+          } catch (error:unknown) {
+            if(error instanceof Error){
+              console.error('Error fetching data:', error);
+            }  
           }
         }
 
         fetchThumbnailPath()
       }, [videoFormatsData]);
 
-      const handleURLChange = (event:string|any) => {
+      const handleURLChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if(isValidHttpUrl(event.target.value)){
           setURL(event.target.value); 
         }else{
@@ -244,10 +249,6 @@ export default function VideoDownloaderComp({id ,onRemove }: ListItemProps) {
     </div>)
 }
 
-interface VideoFormatToDownloadSubmittal{
-  task_id:string,
-  format_id:string
-}
 
 function ThumbnailComp({task_id,imageURL,formatsResponse}:{task_id:string,imageURL:string|undefined,formatsResponse:VideoFormatsResponse}){
 
@@ -270,12 +271,7 @@ function ThumbnailComp({task_id,imageURL,formatsResponse}:{task_id:string,imageU
   const socketUrl = websocketURL+"/video/download";
 
   const {
-    sendMessage,
     sendJsonMessage,
-    lastMessage,
-    lastJsonMessage,
-    readyState,
-    getWebSocket,
   } = useWebSocket(connect ? socketUrl : null, {
     onMessage: (message) => {
       try {
@@ -293,7 +289,7 @@ function ThumbnailComp({task_id,imageURL,formatsResponse}:{task_id:string,imageU
         console.error("Error parsing WebSocket message:", error);
       }
     },
-    shouldReconnect: (closeEvent) => false,
+    shouldReconnect: (_event:WebSocketEventMap['close']) => false,
   });
 
   useEffect(() => {
