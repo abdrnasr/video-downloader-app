@@ -1,10 +1,10 @@
 from celery import Celery
 from dotenv import load_dotenv
-import os
 from backendcode.data_models import EnvironmentVariablesConfig
 
-config = EnvironmentVariablesConfig()
+# Configuration for Celery
 
+config = EnvironmentVariablesConfig()
 origin_address = config.origin_address
 redis_address = config.redis_address
 redis_port = config.redis_port

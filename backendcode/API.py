@@ -7,7 +7,6 @@ import uuid
 from pathlib import Path
 
 from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from urllib.parse import urlparse, parse_qs
@@ -15,13 +14,18 @@ from starlette.websockets import WebSocketState
 
 from backendcode.tasks import extract_info,download_video,delete_thumbnail
 from backendcode.celery_config import celery_app
+from backendcode.utils import extract_video_id
 
 from backendcode.data_models import EnvironmentVariablesConfig
 
 config = EnvironmentVariablesConfig()
 
-redis_client = redis.Redis(host=config.redis_address, port=config.redis_port, db=1)
+# the redis client used to ping the redis server
 redis_ping_client = redis.Redis(host=config.redis_address, port=config.redis_port, db=0, socket_timeout=10)
+
+def get_redis_fetch_client():
+    config = EnvironmentVariablesConfig()
+    return redis.Redis(host=config.redis_address, port=config.redis_port, db=1)
 
 app = FastAPI()
 # For security, we only allow the origin we specify to interact with the backend. 
@@ -42,7 +46,7 @@ os.makedirs(VIDEOS_DIR, exist_ok=True)
 app.mount("/thumbnails", StaticFiles(directory=THUMBNAIL_DIR), name="thumbnails")
 app.mount("/videos", StaticFiles(directory=VIDEOS_DIR), name="videos")
 
-def get_redis_client():
+def get_redis_ping_client():
     """ Create a new Redis client if the current one is disconnected. """
     global redis_ping_client
     try:
@@ -68,7 +72,7 @@ def is_celery_available() -> bool:
 
 def is_redis_available():
     """ Check if Redis is available and reconnect if needed. """
-    client = get_redis_client()
+    client = get_redis_ping_client()
     return client.ping() if client else False
 
 @app.get("/video")
@@ -91,10 +95,7 @@ def submit_video_url(url: str):
     # Extract the video ID from the URL
     videoID =""
     try:
-        parsed_url = urlparse(url)
-        query_params = parse_qs(parsed_url.query)
-        video_id = query_params.get("v")
-        videoID = video_id[0]
+        videoID = extract_video_id(url)
     except Exception:
         raise HTTPException(status_code=400, detail="URL is not formatted properly. Please ensure your using a valid YouTube video URL.")
     actualURL = f"https://www.youtube.com/watch?v={videoID}"
@@ -110,7 +111,7 @@ def submit_video_url(url: str):
 def get_video_format_data(task_id: str):
 
     """
-    Get the status and the fomart data result of a video by task ID.
+    Get the status and the format data result of a video by task ID.
 
     Args:
         task_id (str): The ID of the task to retrieve.
@@ -129,35 +130,22 @@ def get_video_format_data(task_id: str):
     else:
         return {"task_id": task_id, "status": task.state.lower()}
 
-@app.get("/video/details/{task_id}")
-def get_detailed_video_format_data(task_id: str):
-
-    """
-    Retrieve detailed information about a video processing task.
-
-    Args:
-        task_id (str): The ID of the task to retrieve details for.
-
-    Returns:
-        dict: A JSON object containing the task ID, status, and result (if available).
-              - If the task is pending, returns the status as "pending".
-              - If the task is completed successfully, returns the status as "completed" with the result.
-              - If the task has failed, been revoked, or is in a retry state, returns the status as "retry" with the error message.
-              - Otherwise, returns the current task status in lowercase.
-    """
-
-    task = celery_app.AsyncResult(task_id)
-    if task.state == "PENDING":
-        return {"task_id": task_id, "status": "pending"}
-    elif task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "completed", "result": (task.result)}
-    elif task.state == "FAILURE" or task.state =="REVOKED" or task.state == "RETRY":
-        return {"task_id": task_id, "status": "retry", "error": str(task.result)}
-    else:
-        return {"task_id": task_id, "status": task.state.lower()}
-
 @app.get("/video/thumbnail/{task_id}")
 async def get_thumbnail(task_id: str):
+    """
+    Retrieve the thumbnail image for a video processing task.
+
+    Args:
+        task_id (str): The ID of the task to retrieve the thumbnail for.
+
+    Returns:
+        dict: A JSON object containing:
+            - "task_id": The ID of the task.
+            - "status": The current task status ("processing", "success", "retry", or other states).
+            - "image_url": (only if the task is successful) The URL of the downloaded thumbnail image.
+            - "error": (only if the task has failed, been revoked, or is in a retry state) The error message.
+    """
+
     task = celery_app.AsyncResult(task_id)
     if task.state == "PENDING":
         return {"task_id": task_id, "status": "processing"}
@@ -220,41 +208,54 @@ def full_details(task_id: str):
         return {"task_id": task_id, "status": "failed", "error": str(task.result)}
     else:
         return {"task_id": task_id, "status": task.state}
-    
 
 
 @app.websocket("/video/download")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    client_id = str(uuid.uuid4())
-        
+
     try:
         data = await websocket.receive_json()
+
         video_format = data["format"]
         task_id = data["task_id"]
         
+        # Check if the task ID is valid
         if(celery_app.AsyncResult(task_id).result is None):
             raise Exception("Invalid task ID/Too soon to make a request.")
+        
+        # Get the result URL of the video 
         url = celery_app.AsyncResult(task_id).result.get("original_url", None)
-        task = download_video.apply_async(args=[task_id, url, video_format, client_id])
 
+        # Schedule the download task. This is to be run in the background by celery.
+        task = download_video.apply_async(args=[task_id, url, video_format])
+
+        # Create a new redis client for each websocket request to avoid collision issues
+        redis_client = get_redis_fetch_client() 
         while not task.ready():
+
+            # We look if there are any updates for our task id
             if redis_client.scan_iter(f"{task_id}:*"):
+                
+                # If there are updates, we send them to the client
                 value = redis_client.get(f"{task_id}:progress")
                 downloadStatus = redis_client.get(f"{task_id}:status")
                 if value is not None:
                     value = value.decode()
                     downloadStatus = downloadStatus.decode('utf-8')
+
                     await websocket.send_json({"status": downloadStatus,"progress": value})
+            # Sleep for 2 seconds
             await asyncio.sleep(2)
 
-        
+        # Finally, when the task is completed, we update the status.
         await websocket.send_json({"status": "completed", 
                                    "message": "Video download finished!",
                                    "URL":redis_client.get(task_id+":path").decode('utf-8')})
     except WebSocketDisconnect:
         print("Client disconnected.")
     except Exception as e:
+        print(e)
         await websocket.send_json({"status": "error", "message": str(e)})   
     finally:
         if websocket.client_state == WebSocketState.CONNECTED:
@@ -264,9 +265,8 @@ async def websocket_endpoint(websocket: WebSocket):
             print(f"WebSocket state: {websocket.client_state}")
 
 
-
 def strip_required_data(info):
-    """Fetch video formats and metadata."""
+    """Fetch video formats and metadata, return it as a dictionary."""
     formats = info.get('formats', [])
     return {
         "name": info.get('title', 'Unknown'),
@@ -283,3 +283,31 @@ def strip_required_data(info):
             for fmt in formats
         ]
     }
+
+
+@app.get("/video/details/{task_id}")
+def get_detailed_video_format_data(task_id: str):
+
+    """
+    Retrieve detailed information about a video processing task.
+
+    Args:
+        task_id (str): The ID of the task to retrieve details for.
+
+    Returns:
+        dict: A JSON object containing the task ID, status, and result (if available).
+              - If the task is pending, returns the status as "pending".
+              - If the task is completed successfully, returns the status as "completed" with the result.
+              - If the task has failed, been revoked, or is in a retry state, returns the status as "retry" with the error message.
+              - Otherwise, returns the current task status in lowercase.
+    """
+
+    task = celery_app.AsyncResult(task_id)
+    if task.state == "PENDING":
+        return {"task_id": task_id, "status": "pending"}
+    elif task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "completed", "result": (task.result)}
+    elif task.state == "FAILURE" or task.state =="REVOKED" or task.state == "RETRY":
+        return {"task_id": task_id, "status": "retry", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state.lower()}

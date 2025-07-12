@@ -9,7 +9,6 @@ from backendcode.data_models import EnvironmentVariablesConfig
 config = EnvironmentVariablesConfig()
 
 def get_redis_client():
-    config = EnvironmentVariablesConfig()
     return redis.Redis(host=config.redis_address, port=config.redis_port, db=1)
 
 @celery_app.task
@@ -20,7 +19,7 @@ def extract_info(url):
         return ydl.extract_info(url, download=False)
 
 @celery_app.task(bind=True)
-def download_video(self,task_id, url, video_format, client_id):
+def download_video(self,task_id, url, video_format):
 
     # Test if a connection could be established with redis
     redis_client = get_redis_client()
@@ -77,8 +76,11 @@ def download_video(self,task_id, url, video_format, client_id):
 
 @celery_app.task
 def delete_thumbnail(task_id: str):
+    
+    """Delete the thumbnail image that was saved for a video download task.
 
-    # Finds the thumbnail image in the thumbnail directory and delete the one that matches the task_id
+    Finds the thumbnail image in the thumbnail directory and delete the one that matches the task_id.
+    """
     thumb_directory = config.fullpath_thumbnails
     for file in os.listdir(thumb_directory):
         full_path = os.path.join(thumb_directory, file)
@@ -91,6 +93,11 @@ def delete_thumbnail(task_id: str):
 
 @celery_app.task
 def delete_video_folder(task_id: str):
+
+    """Delete the video folder that was saved for a video download task.
+    
+    Finds the folder in the video directory and delete the one that matches the task_id.
+    """
 
     # Build the path to the video directory of the task_id
     video_output_directory = config.fullpath_videos

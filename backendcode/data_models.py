@@ -4,6 +4,8 @@ from pathlib import Path
 
 load_dotenv()
 
+
+# This is the configuration for the environment variables, keeping it centralized
 class EnvironmentVariablesConfig:
     _instance = None
 
@@ -41,12 +43,12 @@ class EnvironmentVariablesConfig:
 
         # Validate the types of Environment Variables
         try:
-            self.thumbnail_persistence_duration = int(os.getenv("THUMBNAIL_PERSISTANCE_DURATION", 60))
+            self.thumbnail_persistence_duration = int(os.getenv("THUMBNAIL_PERSISTANCE_DURATION", 600))
         except ValueError:
             raise ValueError("Environment variable THUMBNAIL_PERSISTANCE_DURATION must be an integer.")
         
         try:
-            self.video_persistence_duration = int(os.getenv("VIDEO_PERSISTANCE_DURATION", 60))
+            self.video_persistence_duration = int(os.getenv("VIDEO_PERSISTANCE_DURATION", 3600))
         except ValueError:
             raise ValueError("Environment variable VIDEO_PERSISTANCE_DURATION must be an integer.")
 
