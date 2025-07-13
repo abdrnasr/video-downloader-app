@@ -1,5 +1,23 @@
 # Online Video Downloader
-## About
+
+- [About](#About)
+- [Features](#Features)
+- [Requirements](#Requirements)
+    - [Working Websites](#Working-Websites)
+- [Installation Guide](#Installation-Guide)
+    - [Full Deployment with Docker](#Full-Deployment-with-Docker)
+    - [Frontend Hosting](#Frontend-Hosting)
+    - [Backend Hosting](#Backend-Hosting)
+- [Technical Breakdown](#Technical-Breakdown)
+    - [A Typical Video Download Flow](#A-Typical-Video-Download-Flow)
+    - [Architectural choices](#Architectural-choices)
+- [Limitations](#Limitations)
+    - [Docker Deployment](#Docker-Deployment)
+    - [Manual Deployment](#Manual-Deployment)
+- [Future Goals](#Future-Goals)
+- [Disclaimer](#Disclaimer)
+
+# About
 This web app allows you to download videos from the internet. It is based on the **yt-dlp** project. The frontend is built using **Next.js**, and the backend utilizes  **Python (FastAPI), Celery, and Redis**.
 
 ### Computer Screen
@@ -18,10 +36,7 @@ This web app allows you to download videos from the internet. It is based on the
 - Users can select from multiple quality options for each video before downloading.
 
 
-## Working Websites
-This web app only works with **Youtube**.
-
-## Requirements
+# Requirements
 - Backend
     - Python 3
         - [venv](https://docs.python.org/3/library/venv.html)
@@ -34,6 +49,8 @@ This web app only works with **Youtube**.
         - Next.js
         - Other dependencies in ***"package.json"***
 
+## Working Websites
+This web app only works with **Youtube**.
 # Installation Guide
 ## Full Deployment with Docker
 The easiest way to deploy this app is using docker. The project comes preconfigured with ***Dockerfiles*** and a ***Docker Compose*** file. For this to work, however, you need to have docker installed on your computer, which can be installed easily by following the relevant [guide](https://docs.docker.com/engine/install/).
@@ -201,7 +218,7 @@ Using Redis and Celery enables future scalability — the system can handle more
 - The total size of the app is larger compared to manual deployment. This can be improved by optimizing the Dockerfiles and possibly using multistage builds, which I might address later.
 - In the current Docker setup, only a single Celery worker is initialized, meaning only one video can be downloaded at a time. However, you can easily scale this by manually running additional Celery worker instances.
 - Currently, the Celery workers and backend must run on the same machine, as they share downloaded files using **Docker volumes**.
-## Limitations
+## Manual Deployment
 - Similar to docker deployment, when deploying the backend manually, you need to have all Celery workers and the FastAPI app on the same machines, as they need to share the ***thumbnails and videos*** folders on the filesystem.
 
 
