@@ -28,11 +28,14 @@ def get_redis_fetch_client():
     return redis.Redis(host=config.redis_address, port=config.redis_port, db=1)
 
 app = FastAPI()
-# For security, we only allow the origin we specify to interact with the backend. 
+# For security, we only allow the origins we specify to interact with the backend. 
 # Thus, any frontend with a different origin is not allowed.
+origins = config.origin_address.split(",")
+
+print("Origins: ",origins)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[config.origin_address],  
+    allow_origins=origins,  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

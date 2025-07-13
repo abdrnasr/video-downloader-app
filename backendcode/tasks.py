@@ -9,6 +9,8 @@ from backendcode.data_models import EnvironmentVariablesConfig
 
 config = EnvironmentVariablesConfig()
 
+print(config)
+
 def get_redis_client():
     return redis.Redis(host=config.redis_address, port=config.redis_port, db=1)
 

@@ -22,8 +22,7 @@ export default function HomePageContent(){
   const addButtonClick = ()=>{
     setVideosToDownload([...videosToDownload, generateId()])
   }
-
-
+  
   // Creates the first download widget only after the first render.
   useEffect(() => {
     addButtonClick()

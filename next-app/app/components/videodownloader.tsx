@@ -357,13 +357,14 @@ function ThumbnailComp({task_id,imageURL,formatsResponse}:{task_id:string,imageU
       
       <Image
       className=""
-      src={fullUrl as string}
+      src={fullUrl}
       alt="Thumbnail"
       width={400}
       height={400}
-      style={{ objectFit: "scale-down",padding:"10px",justifySelf:"center" }}
+      unoptimized
+      style={{ objectFit: "scale-down",padding:"10px",justifySelf:"center" }
+      }
       />
-      
     </div>
   )
 

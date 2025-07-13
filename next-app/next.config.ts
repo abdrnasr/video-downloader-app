@@ -1,6 +1,5 @@
 import type { NextConfig } from "next"; 
 
-
 /**
  * Tries to parse a URL and returns an object with host and port.
  * If the port is not specified, it defaults to "default".
@@ -19,7 +18,6 @@ const parseURL = (url: string) => {
     }
 };
 
-
 // Extracts the backend address from the enviornment variable and try to parse it.
 const defaultURL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 const parsedURL = parseURL(defaultURL);
@@ -34,6 +32,10 @@ if (parsedURL?.protocol === "http:") {
 const backendAddress= parsedURL?.host || '127.0.0.1';
 const backendPort = (!parsedURL?.port || parsedURL.port === "default") ? "8000" : parsedURL.port;
 
+console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
+console.log("WebSocket URL:", process.env.NEXT_PUBLIC_API_WEBSOCKET_URL);
+console.log("backend Address:", backendAddress);
+console.log("backend Port:", backendPort);
 // This is to allow the Image component provided by Next.js to fetch images from the backend.
 // Without specifying the correct protocol, hostname, and port, Images will not be fetched.
 const nextConfig: NextConfig = {

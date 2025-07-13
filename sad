@@ -1,0 +1,6 @@
+(video_downloader_python) E:\DevProjects\VsCode\video_downloader_project>docker images
+REPOSITORY                                      TAG       IMAGE ID       CREATED        SIZE
+video_downloader_project-celery-worker          latest    8cdd31429094   11 hours ago   2.36GB
+video_downloader_project-fastapi-server         latest    f22f5cf8b6f4   14 hours ago   2.36GB
+video_downloader_project-video-downloader-app   latest    b8a8a6fe0bfe   16 hours ago   1.49GB
+redis                                           latest    fa310398637f   6 months ago   117MB
