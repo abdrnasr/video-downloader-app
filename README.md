@@ -162,7 +162,7 @@ celery -A backendcode.celery_config.celery_app worker --pool=solo --hostname=wor
 # Technical Breakdown
 ## A Typical Video Download Flow
 <p align="center">
-    <img src="repo_assets/Video%20Download%20FLow.png" alt="Phone View Image"/>
+    <img src="repo_assets/Video_Download_Flow.png" alt="Video Download Flow"/>
 </p>
 
 The user first sends a request to the Next.js server to retrieve the frontend of the app **(1)**, and the server responds with the app's frontend **(2)**. The user is presented with a textbox to paste a URL. The user pastes the URL and submits the request to the server **(3)**. 
