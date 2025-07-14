@@ -214,13 +214,54 @@ One key goal of this project was to learn and experiment with production-grade t
 Using Redis and Celery enables future scalability — the system can handle more downloads by simply increasing the number of workers without altering the core logic. This makes the tool robust and adaptable to heavier use or multi-user deployments.
 
 # Limitations
-## Docker Deployment
-- The total size of the app is larger compared to manual deployment. This can be improved by optimizing the Dockerfiles and possibly using multistage builds, which I might address later.
-- In the current Docker setup, only a single Celery worker is initialized, meaning only one video can be downloaded at a time. However, you can easily scale this by manually running additional Celery worker instances.
-- Currently, the Celery workers and backend must run on the same machine, as they share downloaded files using **Docker volumes**.
-## Manual Deployment
-- Similar to docker deployment, when deploying the backend manually, you need to have all Celery workers and the FastAPI app on the same machines, as they need to share the ***thumbnails and videos*** folders on the filesystem.
+## General Limitations
+- Regardless of the deployment method, Celery workers and the FastAPI backend ***must share the same filesystem***. The reason is that Celery workers store videos on the filesystem under the **videos** folder, and users request those videos via the FastAPI backend. For this to work, the video must exist under the **videos** folder.
 
+    - ***(Possible Solution)*** This limitation can be addressed by using a different storage mechanism instead of relying on the same filesystem. For example, the Celery worker could store videos on an FTP server, and when a user requests a download, the FastAPI backend could fetch the video from there.
+
+- This tool only allows downloading videos that have no restrictions. Videos that can't be accessed as a ***"guest"*** cannot be downloaded (Private videos and age-restricted ones, for example, cannot be downloaded.)
+
+    - ***(Possible Solution)*** This can be addressed by providing an authentication token, but this feature will likely not be implemented in the web app. (Note: it's already implemented in the CLI tool for interested users.)
+## Docker Deployment
+- The overall size of the app is larger compared to manual deployment.
+    - ***(Possible Solution)*** This can be improved by optimizing the Dockerfiles and possibly using multi-stage builds, which I might address later
+- In the current Docker setup, only a ***single Celery container*** is initialized, which spawns 4 worker threads. This means only 4 videos can be downloaded in parallel.
+    - ***(Possible Solution)*** If this is insufficient, you can spin up additional Celery workers either manually or by adding more Celery containers to the Docker Compose file. You could also increase the ***--concurrency=4*** option to match the number of CPU cores available on your system.
+
+- Currently, the Celery workers and backend must run on the same machine, as they share downloaded files using Docker volumes.
+    - As mentioned earlier, this can be addressed using alternative storage strategies.
+
+## Manual Deployment
+- On my Windows machine, the only way I could launch several worker threads was by opening multiple CLI shells and running more than one Celery worker with --pool=solo..
+    
+    - A simpler way to launch multiple workers could be by making a script that opens different shells and runs those workers. The following is an example of how this could be done:
+
+```
+@echo off
+setlocal
+
+:: Set the path to the root folder of the virtual environment
+set VENV_PATH=C:\path\to\your\venv
+
+:: Set your Celery app path
+set CELERY_APP=backendcode.celery_config.celery_app
+
+echo Starting 4 Celery workers...
+
+start "Worker 1" cmd /k "%VENV_PATH%\Scripts\activate && celery -A %CELERY_APP% worker --loglevel=info --pool=solo --hostname=worker1@%%h"
+start "Worker 2" cmd /k "%VENV_PATH%\Scripts\activate && celery -A %CELERY_APP% worker --loglevel=info --pool=solo --hostname=worker2@%%h"
+start "Worker 3" cmd /k "%VENV_PATH%\Scripts\activate && celery -A %CELERY_APP% worker --loglevel=info --pool=solo --hostname=worker3@%%h"
+start "Worker 4" cmd /k "%VENV_PATH%\Scripts\activate && celery -A %CELERY_APP% worker --loglevel=info --pool=solo --hostname=worker4@%%h"
+
+endlocal
+```
+
+On Linux, you can easily use the ***prefork*** pool (which is the default) to run multiple Celery processes in parallel. Just set the desired concurrency level like this:
+
+```
+celery -A backendcode.celery_config.celery_app worker --concurrency=4 --pool=prefork
+```
+This will start one master process and 4 worker processes, allowing true parallel execution.
 
 # Future Goals
 Currently, the app is in a solid working state, and I continue developing it during my free time. There are still a few features I plan to add in the future:

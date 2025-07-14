@@ -26,4 +26,4 @@ RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 COPY backendcode/ ./backendcode/
 
 # Default command (change as needed)
-CMD ["celery", "-A", "backendcode.celery_config.celery_app", "worker", "--loglevel=info"]
+CMD ["celery", "-A", "backendcode.celery_config.celery_app", "worker", "--loglevel=info", "--concurrency=4"]
